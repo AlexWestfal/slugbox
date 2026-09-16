@@ -127,6 +127,11 @@ def remote() -> Response:
     return send_from_directory(app.static_folder, "remote.html")
 
 
+@app.route("/qr.min.js")
+def qr_js() -> Response:
+    return send_from_directory(app.static_folder, "qr.min.js")
+
+
 @app.route("/favicon.ico")
 def favicon() -> Response:
     return Response(status=204)

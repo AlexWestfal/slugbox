@@ -494,7 +494,7 @@ body.playing .btn.play{
 
 .remote-card{margin-top:18px;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:9px;background:#1a1410;border:1px solid var(--hair);box-shadow:inset 0 1px 0 rgba(255,220,170,.06)}
 .remote-qr{width:82px;height:82px;background:var(--cream);padding:4px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.6)}
-.remote-qr svg{width:100%;height:100%;display:block}
+.remote-qr img, .remote-qr svg{width:100%;height:100%;display:block;image-rendering:pixelated}
 .remote-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .remote-title{font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--amber-hi);letter-spacing:.08em}
 .remote-desc{font-size:11px;color:var(--ink-2);line-height:1.35}
@@ -773,7 +773,7 @@ body.playing .btn.play{
 
 <audio id="audio" preload="none"></audio>
 
-<script src="qr.min.js"></script>
+<script src="/static/qr.min.js"></script>
 <script>
 "use strict";
 /* ==========================================================================
@@ -2072,10 +2072,12 @@ async function initRemoteQR(){
       const qr = qrcode(0, 'M');
       qr.addData(targetUrl);
       qr.make();
-      box.innerHTML = qr.createSvgTag(3, 0);
+      box.innerHTML = qr.createImgTag(3, 0);
     } catch(e) {
       console.warn("QR render error:", e);
     }
+  } else if (!window.qrcode) {
+    console.warn("qrcode library not loaded on window");
   }
 }
 
