@@ -43,3 +43,7 @@ data/logs/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Documentation / Status
+README.md
+STATUS.md
