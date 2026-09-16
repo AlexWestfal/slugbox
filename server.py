@@ -122,6 +122,11 @@ def index() -> Response:
     return send_from_directory(app.static_folder, "index.html")
 
 
+@app.route("/remote")
+def remote() -> Response:
+    return send_from_directory(app.static_folder, "remote.html")
+
+
 @app.route("/favicon.ico")
 def favicon() -> Response:
     return Response(status=204)
@@ -268,8 +273,22 @@ def api_settings_post() -> Response:
     return jsonify({"values": updated})
 
 
+def get_local_ip() -> str:
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
 @app.route("/api/health")
 def api_health() -> Response:
+    port = int(config.get("port") or 5000)
+    local_ip = get_local_ip()
     return jsonify({
         "ok": True,
         "version": config.VERSION,
@@ -278,6 +297,8 @@ def api_health() -> Response:
         "ws_clients": hub.client_count,
         "active_job": worker.current_job_id,
         "music_dir": str(config.music_dir()),
+        "local_ip": local_ip,
+        "remote_url": f"http://{local_ip}:{port}/remote",
     })
 
 

@@ -238,10 +238,46 @@ bundler. Design notes and controls are in the file's own header comments.
 Keyboard: Space/K play-pause · ←/→ seek · ↑/↓ volume · N next · P previous ·
 D download panel · Esc close/back. Media keys work via the Media Session API.
 
-Fonts come from Google Fonts. An offline Pi falls back to Arial Narrow / Segoe
-UI / DejaVu Sans Mono — legible, but the period character is lost. To fix,
-download Oswald, Rubik and IBM Plex Mono into `static/` and swap the `<link>`
-for local `@font-face` rules.
+Fonts are fully self-hosted for offline kiosk deployment. 20 local WOFF2
+files reside in `static/fonts/` (Oswald, Rubik, and IBM Plex Mono), loaded via
+`static/fonts.css` with zero external network dependencies.
+
+---
+
+## Remote Queueing & Physical Jukebox Interaction
+
+Because an encased vintage jukebox has no physical keyboard or mouse, Slugbox
+supports two distinct ways to queue and control music:
+
+### 1. Mobile Remote via QR Code (`/remote`)
+
+Inside the Service Panel tray on the kiosk screen, a dynamic **QR code** is
+rendered alongside the local network URL (`http://<pi-ip>:5000/remote`).
+
+- Anyone connected to the local Wi-Fi can scan the QR code with their smartphone.
+- Opens a lightweight, touch-optimized mobile companion app.
+- Users copy a Spotify link on their phone, tap **PASTE**, review the preview,
+  and hit **DROP IN JUKEBOX**.
+- The kiosk receives the WebSocket event and immediately queues the download
+  and adds the tracks to the local library.
+
+### 2. Physical NFC Token & Coin Drop Chute
+
+For an encased machine with physical buttons and knobs, Slugbox can be paired
+with an analog **gravity coin chute**:
+
+- **Hardware:** A **PN532 NFC reader module** connected to the Raspberry Pi's
+  GPIO header (via I2C) or a plug-and-play USB NFC reader (e.g. ACR122U).
+- **Physical Chute:** A vintage brass coin bezel on the cabinet faceplate guides
+  tokens down an internal wooden or acrylic gravity ramp (~25° incline).
+- **On-the-fly Scan:** The PN532 reader sits flush underneath the chute floor,
+  detecting the token's NTAG chip in ~50ms as it rolls past.
+- **Recollection Box:** The token drops with an authentic mechanical *clink*
+  into a velvet-lined collection tray or cashbox at the bottom of the cabinet.
+- **Reusable Tokens:** Standard **NTAG215** coin tags (rated for 100,000+
+  write cycles). Tokens can either hold a direct URL rewritten from a phone
+  (via NFC Tools) or hold a hardware UID mapped to playlists in the database
+  and cleared/recycled when recollected.
 
 ---
 

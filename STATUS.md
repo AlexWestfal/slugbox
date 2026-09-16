@@ -230,7 +230,11 @@ real ID3 APIC frames) plus live Spotify metadata.
 
 ---
 
-## 9. Next steps
+- [x] Self-hosted all fonts offline in `static/fonts/` + `static/fonts.css`.
+- [x] Added Phone Remote via dynamic QR code at `/remote` for keyboardless jukeboxes.
+- [x] Documented physical NFC gravity coin chute mechanism.
+- [x] Added automated test suite (`tests/`) with 23 passing tests.
+- [x] Git tracking clean and committed.
 
 1. Deploy to the Pi, run `./install.sh --kiosk`, confirm it boots into the
    player.
@@ -238,8 +242,6 @@ real ID3 APIC frames) plus live Spotify metadata.
    updates.
 3. Check playback doesn't stutter while a download runs (this is what
    `threads: 2` is for — tune if needed).
-4. Self-host the fonts if the Pi will ever be offline.
-5. Commit.
 
 ---
 

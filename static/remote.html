@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#120e0b">
+<title>Slugbox Remote</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root {
+  --bg-0: #120e0b;
+  --bg-1: #1a1410;
+  --bg-2: #221a14;
+  --bg-3: #2c221a;
+  --ink: #f3e7d3;
+  --ink-dim: #c9b499;
+  --ink-muted: #8d7a64;
+  --amber: #f0a83c;
+  --amber-hi: #ffc86b;
+  --amber-dim: #a86f21;
+  --red: #d9724f;
+  --green: #59a869;
+  --font-display: 'Oswald', sans-serif;
+  --font-body: 'Rubik', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg-0);
+  color: var(--ink);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  padding: 18px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Header */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(240, 168, 60, 0.15);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-lamp {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--amber-hi) 20%, var(--amber) 60%, var(--amber-dim) 100%);
+  box-shadow: 0 0 10px var(--amber);
+}
+.brand h1 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  color: var(--ink);
+}
+.brand span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--amber);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.status-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 4px 9px;
+  border-radius: 12px;
+  background: rgba(89, 168, 105, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(89, 168, 105, 0.3);
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.status-pill.offline {
+  background: rgba(217, 114, 79, 0.15);
+  color: var(--red);
+  border-color: rgba(217, 114, 79, 0.3);
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Card */
+.card {
+  background: var(--bg-1);
+  border: 1px solid rgba(240, 168, 60, 0.12);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--amber);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Queue Form */
+.prompt-text {
+  font-size: 13px;
+  color: var(--ink-dim);
+  line-height: 1.4;
+}
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--bg-0);
+  border: 1px solid rgba(240, 168, 60, 0.2);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  outline: none;
+}
+input[type="text"]:focus {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px rgba(240, 168, 60, 0.2);
+}
+.btn-paste {
+  height: 48px;
+  padding: 0 16px;
+  background: var(--bg-2);
+  border: 1px solid rgba(240, 168, 60, 0.25);
+  color: var(--amber-hi);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn-primary {
+  height: 48px;
+  background: linear-gradient(180deg, var(--amber) 0%, var(--amber-dim) 100%);
+  color: #1a1410;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(240, 168, 60, 0.25);
+}
+.btn-primary:disabled, .btn-paste:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(26, 20, 16, 0.3);
+  border-top-color: #1a1410;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+/* Feedback & Preview */
+.hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
+.hint.bad { color: var(--red); }
+.hint.good { color: var(--green); }
+
+.preview {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg-2);
+  border: 1px solid rgba(240, 168, 60, 0.18);
+}
+.preview img {
+  width: 70px;
+  height: 70px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+.pv-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+.pv-kind {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--amber);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.pv-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pv-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+/* Now Playing Banner */
+.now-playing-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-2);
+  border-radius: 10px;
+  border-left: 4px solid var(--amber);
+}
+.np-art {
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex: none;
+}
+.np-details {
+  flex: 1;
+  min-width: 0;
+}
+.np-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.np-artist {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Queue List */
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.queue-item {
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border-radius: 8px;
+  border: 1px solid rgba(240, 168, 60, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.queue-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.queue-name {
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.queue-pct {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--amber);
+}
+.bar {
+  height: 4px;
+  background: var(--bg-0);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  background: var(--amber);
+  transition: width 0.3s ease;
+}
+.queue-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-muted);
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo-lamp"></div>
+    <div>
+      <h1>SLUGBOX</h1>
+      <span>Jukebox Remote</span>
+    </div>
+  </div>
+  <div class="status-pill" id="netStatus">
+    <div class="status-dot"></div>
+    <span id="netText">CONNECTED</span>
+  </div>
+</header>
+
+<!-- Remote Queue Drop -->
+<section class="card">
+  <div class="card-head">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span>Drop Record into Jukebox</span>
+  </div>
+  
+  <p class="prompt-text">Paste any Spotify playlist, album, or track link to download and play it on the jukebox.</p>
+  
+  <div class="input-row">
+    <input type="text" id="urlInput" placeholder="https://open.spotify.com/..." autofocus>
+    <button class="btn-paste" id="btnPaste">PASTE</button>
+  </div>
+  
+  <button class="btn-primary" id="btnCheck">
+    <span id="btnCheckText">CHECK RECORD</span>
+  </button>
+  
+  <div class="hint" id="hint">Audio is fetched, transcoded, and added to the local jukebox library.</div>
+  
+  <!-- Preview Card -->
+  <div class="preview" id="previewCard" hidden>
+    <img id="pvCover" src="" alt="Album cover">
+    <div class="pv-info">
+      <div class="pv-kind" id="pvKind">PLAYLIST</div>
+      <div class="pv-title" id="pvTitle"></div>
+      <div class="pv-meta" id="pvMeta"></div>
+    </div>
+  </div>
+  
+  <button class="btn-primary" id="btnSend" hidden>
+    <span>DROP IN JUKEBOX</span>
+  </button>
+</section>
+
+<!-- Active Queue -->
+<section class="card" id="queueSection">
+  <div class="card-head">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Jukebox Download Queue</span>
+  </div>
+  <div class="queue-list" id="queueList">
+    <div class="hint" id="emptyQueue">No active downloads.</div>
+  </div>
+</section>
+
+<script>
+let pendingPreview = null;
+
+const $ = id => document.getElementById(id);
+
+// Clipboard Paste
+$('btnPaste').addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) {
+      $('urlInput').value = text.trim();
+      doCheck();
+    }
+  } catch {
+    $('urlInput').focus();
+  }
+});
+
+// Check URL & Preview
+$('btnCheck').addEventListener('click', doCheck);
+$('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doCheck();
+});
+
+async function doCheck() {
+  const url = $('urlInput').value.trim();
+  const hint = $('hint');
+  if (!url) {
+    hint.textContent = 'Please paste a Spotify link first.';
+    hint.className = 'hint bad';
+    return;
+  }
+  
+  hint.textContent = 'Reading Spotify metadata…';
+  hint.className = 'hint';
+  $('btnCheck').disabled = true;
+  $('btnCheck').innerHTML = '<span class="spinner"></span> READING…';
+  $('previewCard').hidden = true;
+  $('btnSend').hidden = true;
+  
+  try {
+    const res = await fetch('/api/preview?url=' + encodeURIComponent(url));
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Could not read link');
+    }
+    const pv = await res.json();
+    pendingPreview = { url, pv };
+    
+    $('pvCover').src = pv.cover || '';
+    $('pvKind').textContent = (pv.kind || 'RECORD') + (pv.owner ? ' · ' + pv.owner : '');
+    $('pvTitle').textContent = pv.name || 'Untitled';
+    $('pvMeta').textContent = `${pv.track_count || pv.trackCount || 1} tracks`;
+    
+    $('previewCard').hidden = false;
+    $('btnSend').hidden = false;
+    hint.textContent = 'Ready to drop into jukebox.';
+    hint.className = 'hint good';
+  } catch (err) {
+    hint.textContent = err.message;
+    hint.className = 'hint bad';
+  } finally {
+    $('btnCheck').disabled = false;
+    $('btnCheck').textContent = 'CHECK RECORD';
+  }
+}
+
+// Send to Jukebox
+$('btnSend').addEventListener('click', async () => {
+  if (!pendingPreview) return;
+  const { url, pv } = pendingPreview;
+  const btn = $('btnSend');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> SENDING…';
+  
+  try {
+    const res = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Server rejected download');
+    }
+    
+    $('hint').textContent = 'Record queued! Downloading in the background on the jukebox.';
+    $('hint').className = 'hint good';
+    $('urlInput').value = '';
+    $('previewCard').hidden = true;
+    btn.hidden = true;
+    pendingPreview = null;
+    pollStatus();
+  } catch (err) {
+    $('hint').textContent = err.message;
+    $('hint').className = 'hint bad';
+    btn.disabled = false;
+    btn.textContent = 'DROP IN JUKEBOX';
+  }
+});
+
+// Download Status Polling & WebSocket
+async function pollStatus() {
+  try {
+    const res = await fetch('/api/download/status');
+    if (!res.ok) return;
+    const data = await res.json();
+    renderQueue(data);
+  } catch {}
+}
+
+function renderQueue(data) {
+  const container = $('queueList');
+  const active = data.active;
+  if (!active) {
+    container.innerHTML = '<div class="hint">No active downloads.</div>';
+    return;
+  }
+  
+  const settled = (active.landed || 0) + (active.failed || 0) + (active.skipped || 0);
+  const total = active.total || 1;
+  const pct = Math.round((settled / total) * 100);
+  
+  container.innerHTML = `
+    <div class="queue-item">
+      <div class="queue-header">
+        <span class="queue-name">${active.name || 'Downloading'}</span>
+        <span class="queue-pct">${pct}% (${settled}/${total})</span>
+      </div>
+      <div class="bar"><div class="bar-fill" style="width: ${pct}%"></div></div>
+      <div class="queue-status">${active.current_track || 'Processing tracks…'}</div>
+    </div>
+  `;
+}
+
+// WebSocket Connection
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const ws = new WebSocket(`${proto}//${location.host}/ws`);
+  
+  ws.onopen = () => {
+    $('netText').textContent = 'CONNECTED';
+    $('netStatus').className = 'status-pill';
+  };
+  
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.event && msg.event.startsWith('download_') || msg.event.startsWith('track_')) {
+        pollStatus();
+      }
+    } catch {}
+  };
+  
+  ws.onclose = () => {
+    $('netText').textContent = 'DISCONNECTED';
+    $('netStatus').className = 'status-pill offline';
+    setTimeout(connectWS, 3000);
+  };
+}
+
+pollStatus();
+connectWS();
+</script>
+
+</body>
+</html>

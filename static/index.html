@@ -492,6 +492,14 @@ body.playing .btn.play{
 }
 .pv-act{margin-top:auto;padding-top:10px}
 
+.remote-card{margin-top:18px;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:9px;background:#1a1410;border:1px solid var(--hair);box-shadow:inset 0 1px 0 rgba(255,220,170,.06)}
+.remote-qr{width:82px;height:82px;background:var(--cream);padding:4px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.6)}
+.remote-qr svg{width:100%;height:100%;display:block}
+.remote-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.remote-title{font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--amber-hi);letter-spacing:.08em}
+.remote-desc{font-size:11px;color:var(--ink-2);line-height:1.35}
+.remote-url{font-family:var(--font-mono);font-size:10.5px;color:var(--amber);margin-top:3px;word-break:break-all}
+
 .jobs{display:flex;flex-direction:column;gap:11px}
 .empty-jobs{font-family:var(--font-mono);font-size:11px;color:#6b5a48;letter-spacing:.09em;padding:22px;text-align:center;border:1px dashed var(--hair-2);border-radius:9px}
 .job{border-radius:9px;background:#211a14;border:1px solid var(--hair-2);overflow:hidden}
@@ -722,6 +730,14 @@ body.playing .btn.play{
       </div>
       <div class="hint" id="urlHint">Track, album and playlist links are accepted. Audio is fetched by the backend and tagged before it lands on disk.</div>
       <div class="preview" id="preview" hidden></div>
+      <div class="remote-card" id="remoteCard">
+        <div class="remote-qr" id="remoteQr"></div>
+        <div class="remote-info">
+          <div class="remote-title">QUEUE FROM YOUR PHONE</div>
+          <div class="remote-desc">Scan with your phone camera to paste Spotify links wirelessly over Wi-Fi.</div>
+          <div class="remote-url" id="remoteUrlText">http://localhost:5000/remote</div>
+        </div>
+      </div>
     </div>
     <div class="tray-col">
       <div class="lbl">Queue</div>
@@ -757,6 +773,7 @@ body.playing .btn.play{
 
 <audio id="audio" preload="none"></audio>
 
+<script src="qr.min.js"></script>
 <script>
 "use strict";
 /* ==========================================================================
@@ -2032,6 +2049,36 @@ function startClock(){
   setInterval(tick, 20000);
 }
 
+async function initRemoteQR(){
+  let targetUrl = window.location.origin + "/remote";
+  if (API.live){
+    try {
+      const res = await fetch("/api/health");
+      if (res.ok){
+        const data = await res.json();
+        if (data.remote_url){
+          targetUrl = data.remote_url;
+        }
+      }
+    } catch {}
+  }
+
+  const urlText = $("#remoteUrlText");
+  if (urlText) urlText.textContent = targetUrl;
+
+  const box = $("#remoteQr");
+  if (box && window.qrcode){
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData(targetUrl);
+      qr.make();
+      box.innerHTML = qr.createSvgTag(3, 0);
+    } catch(e) {
+      console.warn("QR render error:", e);
+    }
+  }
+}
+
 /* --------------------------------------------------------------------------
    Boot
    -------------------------------------------------------------------------- */
@@ -2050,6 +2097,7 @@ function startClock(){
   UI.paintTrack();
   UI.reflectPlaying();
   startClock();
+  initRemoteQR();
 
   if (API.live){
     await loadServerSettings();

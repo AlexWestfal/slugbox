@@ -113,6 +113,7 @@ class DownloadEngine:
             "generate_lrc": False,
             "sponsor_block": False,
             "save_errors": None,
+            "audio_providers": ["youtube-music", "youtube"],
         }
 
     def _fingerprint_of(self, settings: Dict[str, Any]) -> tuple:
