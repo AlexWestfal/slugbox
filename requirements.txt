@@ -1,0 +1,16 @@
+# slugbox backend dependencies.
+#
+# Deliberately lean — this runs on a Pi 4 alongside Chromium. No numpy, no
+# pandas, no PyQt.
+
+flask>=3.0
+flask-sock>=0.7            # plain WebSocket at /ws (see README for why not Socket.IO)
+simple-websocket>=1.0      # flask-sock's transport
+mutagen>=1.46              # tag + cover-art reading for the library scanner
+requests>=2.32
+
+# Download engine (MIT). Pulls in yt-dlp, spotipy and ytmusicapi itself; yt-dlp
+# is pinned separately because it needs updating far more often than spotdl
+# does — when YouTube changes, `pip install -U yt-dlp` is usually the whole fix.
+spotdl>=4.2
+yt-dlp>=2024.8

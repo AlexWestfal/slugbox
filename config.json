@@ -1,0 +1,15 @@
+{
+  "music_dir": "~/Music",
+  "format": "mp3",
+  "bitrate": "320k",
+  "threads": 2,
+  "output_template": "{list-name}/{track-number}. {title} - {artists}.{output-ext}",
+  "playlist_numbering": true,
+  "host": "0.0.0.0",
+  "port": 5000,
+  "scan_interval_s": 8,
+  "ffmpeg": "ffmpeg",
+  "spotify_client_id": "",
+  "spotify_client_secret": "",
+  "log_level": "INFO"
+}

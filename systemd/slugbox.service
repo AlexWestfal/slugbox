@@ -1,0 +1,37 @@
+[Unit]
+Description=slugbox jukebox server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# install.sh substitutes __USER__ and __DIR__ with the real values. Pi OS no
+# longer guarantees a user called "pi", so nothing here is hardcoded.
+User=__USER__
+Group=__USER__
+WorkingDirectory=__DIR__
+ExecStart=__DIR__/.venv/bin/python __DIR__/server.py
+
+Restart=always
+RestartSec=5
+
+# A long playlist can take many minutes; don't mistake that for a hang.
+TimeoutStopSec=20
+KillSignal=SIGTERM
+
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=slugbox
+
+# Modest hardening. The service writes only its own directory and the music
+# root, so the rest of the filesystem can stay read-only to it.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectControlGroups=true
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
