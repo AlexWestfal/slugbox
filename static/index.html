@@ -762,6 +762,10 @@ body.playing .btn.play{
       <div class="seg" id="segQuality"></div>
     </div>
     <div class="field">
+      <div class="lbl">Download Threads (1 for smooth Pi 4 playback)</div>
+      <div class="seg" id="segThreads"></div>
+    </div>
+    <div class="field">
       <div class="lbl">Download location</div>
       <input id="setPath" class="input" spellcheck="false" autocomplete="off">
     </div>
@@ -1283,9 +1287,11 @@ async function loadServerSettings(){
   settings.format = s.values.format;
   settings.bitrate = s.values.bitrate;
   settings.music_dir = s.values.music_dir;
+  settings.threads = s.values.threads || 2;
 
   markSeg("#segFormat", settings.format);
   markSeg("#segQuality", settings.bitrate);
+  markSeg("#segThreads", String(settings.threads));
   const pathInput = $("#setPath");
   if (pathInput) pathInput.value = settings.music_dir;
 
@@ -1922,6 +1928,8 @@ function wire(){
   buildSeg("#segFormat", ["mp3", "m4a", "flac", "opus"], "format", v => v.toUpperCase());
   buildSeg("#segQuality", ["128k", "192k", "256k", "320k", "auto"], "bitrate",
            v => v === "auto" ? "AUTO" : v);
+  buildSeg("#segThreads", ["1", "2", "3", "4"], "threads",
+           v => v === "1" ? "1 (PI 4)" : (v === "4" ? "4 (PI 5)" : v));
   $("#setPath").value = settings.music_dir;
   $("#setPath").addEventListener("change", e => {
     settings.music_dir = e.target.value.trim() || "~/Music";
@@ -1969,7 +1977,7 @@ function bumpVol(d){
 
 function buildSeg(sel, values, key, label){
   const box = $(sel);
-  box.innerHTML = values.map(v => `<button data-v="${v}" class="${settings[key] === v ? "on" : ""}">${label(v)}</button>`).join("");
+  box.innerHTML = values.map(v => `<button data-v="${v}" class="${String(settings[key]) === String(v) ? "on" : ""}">${label(v)}</button>`).join("");
   box.addEventListener("click", e => {
     const b = e.target.closest("button[data-v]");
     if (!b) return;
