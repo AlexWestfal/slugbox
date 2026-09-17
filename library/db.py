@@ -168,6 +168,20 @@ def known_track_stamps() -> Dict[str, tuple]:
     return {r["path"]: (r["mtime"], r["file_size"]) for r in rows}
 
 
+def tracks_for_scan() -> Dict[str, sqlite3.Row]:
+    """path -> row, with everything a rescan needs for an unchanged file.
+
+    One query instead of a `track_by_path` per file. The old shape cost a
+    SQLite round-trip for every track on disk on every tick — imperceptible at
+    50 tracks, seconds of avoidable work at a few thousand, on the same core
+    that is decoding audio.
+    """
+    rows = conn().execute(
+        "SELECT path, mtime, file_size, duration_s, cover_hash, artist, album FROM tracks"
+    ).fetchall()
+    return {r["path"]: r for r in rows}
+
+
 def delete_tracks(paths: Iterable[str]) -> int:
     paths = list(paths)
     if not paths:

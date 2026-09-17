@@ -157,7 +157,7 @@ def scan(force: bool = False) -> Dict[str, int]:
     started = time.perf_counter()
     db.init()
 
-    known = {} if force else db.known_track_stamps()
+    known = {} if force else db.tracks_for_scan()
     seen_paths: set[str] = set()
     ensured_dirs: set[str] = set()
     by_folder: Dict[str, List[Dict[str, Any]]] = {}
@@ -189,22 +189,21 @@ def scan(force: bool = False) -> Dict[str, int]:
             previous = known.get(relative)
             unchanged = (
                 previous is not None
-                and previous[0] is not None
-                and abs((previous[0] or 0) - stat.st_mtime) < 1.0
-                and previous[1] == stat.st_size
+                and previous["mtime"] is not None
+                and abs((previous["mtime"] or 0) - stat.st_mtime) < 1.0
+                and previous["file_size"] == stat.st_size
             )
 
             if unchanged:
-                # Still needs to count toward its folder's aggregates.
-                row = db.track_by_path(relative)
-                if row is not None:
-                    by_folder.setdefault(relative_dir, []).append({
-                        "duration_s": row["duration_s"] or 0,
-                        "cover_hash": row["cover_hash"],
-                        "album_artist": row["artist"],
-                        "album": row["album"],
-                    })
-                    continue
+                # Still needs to count toward its folder's aggregates — and the
+                # row is already in hand from the single batch query.
+                by_folder.setdefault(relative_dir, []).append({
+                    "duration_s": previous["duration_s"] or 0,
+                    "cover_hash": previous["cover_hash"],
+                    "album_artist": previous["artist"],
+                    "album": previous["album"],
+                })
+                continue
 
             meta = read_metadata(full)
             if meta is None:
@@ -240,27 +239,36 @@ def scan(force: bool = False) -> Dict[str, int]:
             by_folder.setdefault(relative_dir, []).append({
                 "duration_s": meta["duration_s"],
                 "cover_hash": meta["cover_hash"],
-                "album_artist": meta["album_artist"] or meta["artist"],
+                # Must be the same field an unchanged file contributes below —
+                # the persisted track artist. Preferring album_artist here made
+                # a full scan and an incremental one disagree, so a playlist
+                # flipped between its owner's name and "Various Artists"
+                # depending on which path last wrote the folder row.
+                "album_artist": track_row["artist"],
                 "album": meta["album"],
             })
 
-    # Aggregate folders from whatever their tracks actually say.
-    for relative_dir, entries in by_folder.items():
-        cover_hash = next((e["cover_hash"] for e in entries if e.get("cover_hash")), None)
-        db.upsert_folder({
-            "id": _stable_id(relative_dir),
-            "path": relative_dir,
-            "name": _folder_display_name(relative_dir),
-            "artist": _dominant_artist(entries),
-            "track_count": len(entries),
-            "duration_s": sum(int(e["duration_s"] or 0) for e in entries),
-            "cover_hash": cover_hash,
-            "updated_at": time.time(),
-        })
-
     removed = db.delete_tracks(set(known) - seen_paths) if not force else 0
-    db.prune_empty_folders()
-    db.conn().commit()
+
+    # If nothing moved on disk, the folder aggregates cannot have changed, so a
+    # quiet tick stays read-only: no row rewrites, and no commit fsyncing an SD
+    # card every few seconds underneath playback.
+    if added or updated or removed or force:
+        # Aggregate folders from whatever their tracks actually say.
+        for relative_dir, entries in by_folder.items():
+            cover_hash = next((e["cover_hash"] for e in entries if e.get("cover_hash")), None)
+            db.upsert_folder({
+                "id": _stable_id(relative_dir),
+                "path": relative_dir,
+                "name": _folder_display_name(relative_dir),
+                "artist": _dominant_artist(entries),
+                "track_count": len(entries),
+                "duration_s": sum(int(e["duration_s"] or 0) for e in entries),
+                "cover_hash": cover_hash,
+                "updated_at": time.time(),
+            })
+        db.prune_empty_folders()
+        db.conn().commit()
 
     elapsed = time.perf_counter() - started
     summary = {"added": added, "updated": updated, "removed": removed,
@@ -290,17 +298,27 @@ class Scanner(threading.Thread):
         except Exception:
             log.exception("Initial library scan failed")
 
+        quiet = 0
         while not self._stop.is_set():
-            interval = max(2, int(config.get("scan_interval_s")))
-            # Either the interval elapses or someone nudges us after a download.
+            base = max(2, int(config.get("scan_interval_s")))
+            # Back off while the library is quiet: 8s, 16s, 32s, then a minute.
+            # A download still shows up immediately — the worker nudges us — so
+            # the only thing the backoff costs is noticing files copied in by
+            # hand a little later, and it keeps the walk off the CPU that is
+            # busy decoding audio.
+            interval = min(base * (2 ** min(quiet, 3)), max(base, 60))
             self._wake.wait(timeout=interval)
+            nudged = self._wake.is_set()
             self._wake.clear()
             if self._stop.is_set():
                 break
             try:
                 summary = scan()
                 if summary["added"] or summary["updated"] or summary["removed"]:
+                    quiet = 0
                     self._on_change(summary)
+                else:
+                    quiet = 0 if nudged else quiet + 1
             except Exception:
                 log.exception("Library rescan failed")
 
