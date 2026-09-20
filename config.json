@@ -2,7 +2,7 @@
   "music_dir": "~/Music",
   "format": "mp3",
   "bitrate": "320k",
-  "threads": 2,
+  "threads": 4,
   "output_template": "{list-name}/{track-number}. {title} - {artists}.{output-ext}",
   "playlist_numbering": true,
   "host": "0.0.0.0",
