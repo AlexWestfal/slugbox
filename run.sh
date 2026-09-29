@@ -150,7 +150,7 @@ sleep 0.5
 
 KIOSK_FLAGS=()
 if [[ $WINDOW_MODE -eq 0 ]]; then
-  KIOSK_FLAGS=(
+  KIOSK_FLAGS+=(
     "--kiosk"
     "--noerrdialogs"
     "--disable-infobars"
@@ -158,6 +158,23 @@ if [[ $WINDOW_MODE -eq 0 ]]; then
     "--autoplay-policy=no-user-gesture-required"
     "--check-for-update-interval=31536000"
   )
+fi
+
+# If running as root, Chromium requires --no-sandbox and desktop display auth
+if [[ $EUID -eq 0 ]]; then
+  KIOSK_FLAGS+=("--no-sandbox" "--test-type")
+  if [[ -z "${XAUTHORITY:-}" ]]; then
+    DESKTOP_XAUTH="$(ls /home/*/.Xauthority 2>/dev/null | head -n 1 || true)"
+    if [[ -n "$DESKTOP_XAUTH" ]]; then
+      export XAUTHORITY="$DESKTOP_XAUTH"
+    fi
+  fi
+  if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then
+    WAYLAND_USER_DIR="$(ls -d /run/user/100* 2>/dev/null | head -n 1 || true)"
+    if [[ -n "$WAYLAND_USER_DIR" ]]; then
+      export XDG_RUNTIME_DIR="$WAYLAND_USER_DIR"
+    fi
+  fi
 fi
 
 "$BROWSER" "${KIOSK_FLAGS[@]}" "http://localhost:${PORT}/" >/dev/null 2>&1 &
