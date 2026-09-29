@@ -90,14 +90,22 @@ def _coerce(setting: Setting, value: Any) -> Any:
 
 
 def load() -> Dict[str, Any]:
-    """Read config.json, filling in defaults for anything missing or invalid."""
+    """Read config.json, filling in defaults for anything missing or invalid.
+
+    If config.json does not exist, is empty, or is corrupted, it is automatically
+    generated with defaults and persisted to disk so the user never gets stuck.
+    """
     global _cache
     with _lock:
         if _cache is not None:
             return dict(_cache)
 
         raw: Dict[str, Any] = {}
-        if CONFIG_PATH.exists():
+        needs_write = False
+
+        if not CONFIG_PATH.exists() or CONFIG_PATH.stat().st_size == 0:
+            needs_write = True
+        else:
             try:
                 # utf-8-sig, not utf-8: editors on Windows (and PowerShell's
                 # Set-Content) happily prepend a BOM, and json.loads chokes on
@@ -105,16 +113,15 @@ def load() -> Dict[str, Any]:
                 # silently reverted every setting to its default.
                 raw = json.loads(CONFIG_PATH.read_text(encoding="utf-8-sig"))
             except (json.JSONDecodeError, OSError) as exc:
-                # A corrupt config must not stop the appliance from booting —
-                # but it must be loud, or you'll debug the wrong thing for an
-                # hour wondering why music_dir "isn't applying".
                 import logging
                 logging.getLogger(APP_NAME).error(
-                    "config.json could not be read (%s) — falling back to "
-                    "defaults. Fix the file or delete it to regenerate.", exc)
+                    "config.json could not be read (%s) — recreating with "
+                    "defaults.", exc)
                 raw = {}
+                needs_write = True
             if not isinstance(raw, dict):
                 raw = {}
+                needs_write = True
 
         merged = dict(_DEFAULTS)
         for key, value in raw.items():
@@ -122,6 +129,16 @@ def load() -> Dict[str, Any]:
                 merged[key] = _coerce(_BY_KEY[key], value)
 
         _cache = merged
+
+        if needs_write:
+            try:
+                CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+                tmp = CONFIG_PATH.with_suffix(".json.tmp")
+                tmp.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+                tmp.replace(CONFIG_PATH)
+            except OSError:
+                pass
+
         return dict(merged)
 
 

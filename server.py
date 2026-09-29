@@ -30,7 +30,8 @@ from flask_sock import Sock
 
 from engine import config, spotify_api
 from engine.logging_setup import get_logger, setup
-from library import covers, db, scanner as scanner_mod
+from library import covers, db
+from library.scanner import Scanner
 from worker.download_worker import DownloadWorker
 
 log = setup()
@@ -331,7 +332,7 @@ def _on_library_change(summary: Dict[str, int]) -> None:
     })
 
 
-scanner = scanner_mod.Scanner(on_change=_on_library_change)
+scanner = Scanner(on_change=_on_library_change)
 worker = DownloadWorker(broadcast=hub.broadcast, nudge_scanner=scanner.nudge)
 
 

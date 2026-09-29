@@ -56,10 +56,9 @@ fi
 mkdir -p "$DIR/data"
 
 # ----------------------------------------------------------------- read config --
-PORT=5000
-if [[ -f "$DIR/config.json" ]]; then
-  PORT="$("$DIR/.venv/bin/python" -c "import json; print(json.load(open('$DIR/config.json')).get('port', 5000))" 2>/dev/null || echo 5000)"
-fi
+# Auto-generates config.json with defaults if missing/corrupt, then reads port
+PORT="$("$DIR/.venv/bin/python" -c "from engine import config; print(config.get('port'))" 2>/dev/null || echo 5000)"
+
 
 check_server() {
   curl -s -m 1 "http://localhost:${PORT}/api/health" 2>/dev/null | grep -q '"ok":\s*true'

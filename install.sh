@@ -93,7 +93,7 @@ if [[ $INSTALL_SERVICE -eq 1 ]]; then
 
   sleep 2
   if systemctl is-active --quiet "$SERVICE_NAME"; then
-    PORT="$(python3 -c "import json;print(json.load(open('$DIR/config.json')).get('port',5000))" 2>/dev/null || echo 5000)"
+    PORT="$("$DIR/.venv/bin/python" -c "from engine import config; print(config.get('port'))" 2>/dev/null || echo 5000)"
     say "Running at http://localhost:${PORT}"
     echo "    logs:   journalctl -u ${SERVICE_NAME} -f"
     echo "    stop:   sudo systemctl stop ${SERVICE_NAME}"
@@ -109,7 +109,7 @@ fi
 # -------------------------------------------------------------------- kiosk --
 if [[ $INSTALL_KIOSK -eq 1 ]]; then
   say "Installing Chromium kiosk autostart"
-  PORT="$(python3 -c "import json;print(json.load(open('$DIR/config.json')).get('port',5000))" 2>/dev/null || echo 5000)"
+  PORT="$("$DIR/.venv/bin/python" -c "from engine import config; print(config.get('port'))" 2>/dev/null || echo 5000)"
   BROWSER="$(command -v chromium-browser || command -v chromium || true)"
   if [[ -z "$BROWSER" ]]; then
     echo "    chromium not found; install it with: sudo apt install -y chromium-browser" >&2
