@@ -39,7 +39,7 @@ SUPPORTED_FORMATS = ("mp3", "m4a", "flac", "opus", "ogg", "wav")
 SUPPORTED_BITRATES = ("auto", "disable", "128k", "192k", "256k", "320k")
 
 SETTINGS: Tuple[Setting, ...] = (
-    Setting("music_dir", str(Path.home() / "Music"), "str",
+    Setting("music_dir", "~/Music", "str",
             help="Root folder scanned for audio and written to by downloads."),
     Setting("format", "mp3", "choice", SUPPORTED_FORMATS,
             help="Output container/codec."),
@@ -128,6 +128,13 @@ def load() -> Dict[str, Any]:
             if key in _BY_KEY:
                 merged[key] = _coerce(_BY_KEY[key], value)
 
+        # If a non-root user inherited a /root/Music directory from a previous
+        # run as root, safely heal it back to ~/Music
+        if hasattr(os, "geteuid") and os.geteuid() != 0:
+            if str(merged.get("music_dir", "")).startswith("/root/"):
+                merged["music_dir"] = "~/Music"
+                needs_write = True
+
         _cache = merged
 
         if needs_write:
@@ -166,8 +173,17 @@ def get(key: str) -> Any:
 
 def music_dir() -> Path:
     """Absolute, expanded music root. Created if absent."""
-    path = Path(os.path.expanduser(str(get("music_dir")))).resolve()
-    path.mkdir(parents=True, exist_ok=True)
+    raw = str(get("music_dir") or "~/Music")
+    if hasattr(os, "geteuid") and os.geteuid() != 0 and raw.startswith("/root/"):
+        raw = "~/Music"
+
+    path = Path(os.path.expanduser(raw)).resolve()
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        # Fallback to current user's ~/Music if configured path is forbidden
+        path = (Path.home() / "Music").resolve()
+        path.mkdir(parents=True, exist_ok=True)
     return path
 
 
